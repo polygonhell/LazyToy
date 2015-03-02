@@ -1,8 +1,8 @@
-import System.Environment
- 
--- | 'main' runs the main program
+module Parser (main) where
+import Lexer
+
+
+
 main :: IO ()
-main = getArgs >>= print . haqify . head
- 
-haqify :: String -> String
-haqify s = "Haq! " ++ s
+main = do
+	putStr $ show $ tokenize "test" "(Hello {-Hello-} 5) -- More comment"
