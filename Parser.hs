@@ -11,37 +11,37 @@ import Lexer
 type Parser a = Parsec [TokenPos] () a
 
 data Prg
-  = PrgApp Prg [Prg]
+  = PrgApp PrgPos [PrgPos]
   | PrgId String
   | PrgFloat Double
   | PrgInt Integer
-  | PrgTLDef String [String] Prg 
+  | PrgTLDef String [String] PrgPos
   deriving (Eq, Show)
 
-type PrgPos = (Prg, Integer)
+type PrgPos = (Prg, SourcePos)
 
-app :: Parser Prg
+app :: Parser PrgPos
 app = try $ do
-  fn <- factor
-  args <- many1 expr
-  return $ PrgApp fn args
+  (fn, pos) <- factor
+  argsWithPos <- many1 expr
+  return $ (PrgApp (fn,pos) argsWithPos, pos) 
 
-identifier :: Parser Prg
+identifier :: Parser PrgPos
 identifier = do
-  TokenId name <- anyId
-  return $ PrgId name
+  (TokenId name, pos) <- anyId
+  return $ (PrgId name, pos)
 
-integer :: Parser Prg
+integer :: Parser PrgPos
 integer = do
-  TokenInt val <- anyInt
-  return $ PrgInt val
+  (TokenInt val, pos) <- anyInt
+  return $ (PrgInt val, pos)
 
-expr :: Parser Prg
+expr :: Parser PrgPos
 expr = 
       app
   <|> factor
 
-factor :: Parser Prg
+factor :: Parser PrgPos
 factor = 
       bracketed expr
   <|> identifier 
@@ -49,16 +49,16 @@ factor =
 
 
 
-unWrapId :: Token -> String
-unWrapId (TokenId name) = name
+unWrapId :: TokenPos -> String
+unWrapId ((TokenId name), _) = name
 
-topLevelDef :: Parser Prg
+topLevelDef :: Parser PrgPos
 topLevelDef =  try $ do
-  TokenId name <- anyId
+  (TokenId name, pos) <- anyId
   argTokens <- many anyId
   tok TokenEq
   e <- factor
-  return $ PrgTLDef name (map unWrapId argTokens) e 
+  return $ (PrgTLDef name (map unWrapId argTokens) e, pos) 
 
 
 bracketed :: Parser a -> Parser a
@@ -70,47 +70,32 @@ advance _ _ ((_, pos) : _) = pos
 advance pos _ [] = pos
 
 -- Versions that retain position Info
-satisfy2 :: (TokenPos -> Bool) -> Parser TokenPos
-satisfy2 f = tokenPrim show
+satisfy :: (TokenPos -> Bool) -> Parser TokenPos
+satisfy f = tokenPrim show
                       advance
                       (\c -> if f c then Just c else Nothing)
 
-tok2 :: Token -> Parser TokenPos
-tok2 t = (Parser.satisfy2 $ (== t) . fst) <?> show t
-
-anyId2 :: Parser TokenPos
-anyId2 = Parser.satisfy2 p <?> "Id"
-  where p (t, _) = case t of 
-                      TokenId _ -> True
-                      _ -> False
-
-
-satisfy :: (TokenPos -> Bool) -> Parser Token
-satisfy f = tokenPrim show
-                      advance
-                      (\c -> if f c then Just (fst c) else Nothing)
-
-tok :: Token -> Parser Token
+tok :: Token -> Parser TokenPos
 tok t = (Parser.satisfy $ (== t) . fst) <?> show t
 
-anyId :: Parser Token
+anyId :: Parser TokenPos
 anyId = Parser.satisfy p <?> "Id"
   where p (t, _) = case t of 
                       TokenId _ -> True
                       _ -> False
 
-anyInt :: Parser Token
+anyInt :: Parser TokenPos
 anyInt = Parser.satisfy p <?> "Int"
   where p (t, _) = case t of 
                       TokenInt _ -> True
                       _ -> False
                       
 
-topLevel :: Parser [Prg]
+topLevel :: Parser [PrgPos]
 topLevel = (many1 topLevelDef) <* (tok TokenEof)
 
 
-parse ::SourceName -> [TokenPos] -> Either ParseError [Prg]
+parse ::SourceName -> [TokenPos] -> Either ParseError [PrgPos]
 parse srcName tokenStream = runParser topLevel () srcName toks where 
   toks = tokenStream ++ [(TokenEof, initialPos "")]
 
