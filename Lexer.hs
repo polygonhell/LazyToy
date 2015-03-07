@@ -3,6 +3,7 @@ module Lexer (tokenize, Token(..), TokenPos) where
 import Text.Parsec hiding (token, tokens)
 import Text.Parsec.String (Parser)
 import qualified Text.Parsec.Token as Tok
+-- import Text.Parsec.Indent
 
 import Control.Applicative  ((<*), (*>), (<$>), (<*>))
 
@@ -14,6 +15,7 @@ data Token
   | TokenString String
   | TokenLParen
   | TokenRParen
+  | TokenEq
   | TokenEof
   deriving (Eq,Show)
 
@@ -41,15 +43,21 @@ lexer = Tok.makeTokenParser langDef
 whiteSpace :: Parser ()
 whiteSpace = Tok.whiteSpace lexer
 
+operator :: Parser Token
+operator = do 
+  p <- Tok.operator lexer
+  return $ TokenId p
+
 
 identifier :: Parser Token
 identifier = do 
   p <- Tok.identifier lexer
   return $ TokenId p
 
-lparen, rparen :: Parser Token
+lparen, rparen, equals :: Parser Token
 lparen = char '(' >> return TokenLParen
 rparen = char ')' >> return TokenRParen
+equals = char '=' >> return TokenEq
 
 int :: Parser Token
 int = do
@@ -75,6 +83,8 @@ token :: Parser TokenPos
 token = parsePos $ choice 
     [ lparen
     , rparen
+    , equals
+    , operator
     , identifier
     , int
     , float
