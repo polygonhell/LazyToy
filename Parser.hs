@@ -1,9 +1,9 @@
-module Parser (main) where
+module Parser (parse, Prg(..), PrgPos) where
 
-import Text.Parsec
+import Text.Parsec hiding (parse)
 -- import Data.Functor.Identity
 import Text.ParserCombinators.Parsec.Pos
-import Control.Applicative  ((<*))
+import Control.Applicative  ((<*), (*>))
 
 
 import Lexer
@@ -62,14 +62,12 @@ topLevelDef =  try $ do
 
 
 bracketed :: Parser a -> Parser a
-bracketed = between (tok TokenLParen) (tok TokenRParen)
-
+bracketed x = tok TokenLParen *> x <* tok TokenRParen
 
 advance :: SourcePos -> t -> [TokenPos] -> SourcePos
 advance _ _ ((_, pos) : _) = pos
 advance pos _ [] = pos
 
--- Versions that retain position Info
 satisfy :: (TokenPos -> Bool) -> Parser TokenPos
 satisfy f = tokenPrim show
                       advance
@@ -95,24 +93,7 @@ topLevel :: Parser [PrgPos]
 topLevel = (many1 topLevelDef) <* (tok TokenEof)
 
 
-parse ::SourceName -> [TokenPos] -> Either ParseError [PrgPos]
-parse srcName tokenStream = runParser topLevel () srcName toks where 
+parse :: [TokenPos] -> Either ParseError [PrgPos]
+parse  tokenStream = runParser topLevel () "" toks where 
   toks = tokenStream ++ [(TokenEof, initialPos "")]
 
-testProg :: String
-testProg = unlines 
-  [ "main n = (fib n)"
-  , "poop n = ((+ 3) n)"
-  ]
-
--- TODO EOF Token
--- Deal with multiple SC defs
-
-main :: IO ()
-main = do
-  putStrLn $ show $ tokenize "test" testProg
-  -- tokenStream <- tokenize "test" "Hello There Now"
-  putStrLn $ show $ Parser.parse "test" $ tokenStream 
-    where tokenStream = case (tokenize "test" testProg) of
-                          Right toks -> toks
-                          _ -> error ("lexer failed")

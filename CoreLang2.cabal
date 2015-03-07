@@ -16,7 +16,7 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 executable CoreLang2
-  main-is: 			 Parser.hs
+  main-is: 			 Compiler.hs
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >=4.7 && <4.8, parsec, transformers
