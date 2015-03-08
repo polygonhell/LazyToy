@@ -12,12 +12,14 @@ type Parser a = Parsec [TokenPos] () a
 
 data Prg
   = PrgApp PrgPos [PrgPos]
+  | PrgLet [Bind] PrgPos
   | PrgId String
   | PrgFloat Double
   | PrgInt Integer
   | PrgTLDef String [String] PrgPos
   deriving (Eq, Show)
 
+type Bind = (String, PrgPos)
 type PrgPos = (Prg, SourcePos)
 
 app :: Parser PrgPos
