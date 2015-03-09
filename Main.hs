@@ -5,12 +5,12 @@ import Lexer
 import Compiler
 
 import Control.Monad.State.Lazy
-import Debug.Trace
+-- import Debug.Trace
 
 
 testProg :: String
 testProg = unlines 
-  [ "main = (I (I 5))"
+  [ "main = (I (J (K 5)))"
   , "I n = n"
   ]
 

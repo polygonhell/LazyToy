@@ -1,4 +1,4 @@
-module Parser (parse, Prg(..), PrgPos) where
+module Parser (parse, Prg(..), PrgPos, Bind) where
 
 import Text.Parsec hiding (parse)
 -- import Data.Functor.Identity
