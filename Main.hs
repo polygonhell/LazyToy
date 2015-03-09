@@ -10,7 +10,7 @@ import Control.Monad.State.Lazy
 
 testProg :: String
 testProg = unlines 
-  [ "main = (I (J (K 5)))"
+  [ "main = (I (J (K 5) (K 6)))"
   , "I n = n"
   ]
 
