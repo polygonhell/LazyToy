@@ -15,8 +15,18 @@ build-type:          Simple
 -- extra-source-files:  
 cabal-version:       >=1.10
 
+Test-Suite test-parser
+  type:               exitcode-stdio-1.0
+  main-is:            Main.hs
+  hs-source-dirs:     test
+  build-depends:      base >=4.7 && <4.8, 
+                      parsec, 
+                      transformers, 
+                      mtl,
+                      quickcheck
+
 executable CoreLang2
-  main-is: 			 Main.hs
+  main-is:       Main.hs
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >=4.7 && <4.8, parsec, transformers, mtl

@@ -31,7 +31,7 @@ reWriteArg (PrgApp fn args, pos) = do
   (bindings, prgs) <- reWriteArgs args ([],[])
   -- let (bindings, prgs) = ([], args)
   -- trace ("\nrewrittenArgs " ++ (show bindings) ++ "\n" ++ (show prgs) ++ "\n") 
-  return ((label, (PrgApp fn prgs, pos)) : bindings, (PrgId label, pos))
+  return (bindings ++ [(label, (PrgApp fn prgs, pos))], (PrgId label, pos))
 reWriteArg e = do
   return ([], e)
 
@@ -40,14 +40,14 @@ reWriteArgs [] res = do
   return res
 reWriteArgs (h:t) (pb, pp) = do
   (binds, expr) <- reWriteArg h
-  (tailBinds, tailExprs) <- reWriteArgs t (binds ++ pb, expr : pp)
+  (tailBinds, tailExprs) <- reWriteArgs t (pb ++ binds, pp ++ [expr])
   return (tailBinds, tailExprs)
 
 reWriteExpr :: PrgPos -> LabelState PrgPos
 reWriteExpr (PrgApp fn args, pos) = do
   (bindings, prgs) <- reWriteArgs args ([],[])
   trace ("\nrewrittenExpr " ++ (show bindings) ++ "\n" ++ (show prgs) ++ "\n") 
-    return (PrgLet (reverse bindings) (PrgApp fn prgs, pos), pos)
+    return (PrgLet bindings (PrgApp fn  prgs, pos), pos)
 reWriteExpr e = do
   return e
 

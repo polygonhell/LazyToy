@@ -25,7 +25,7 @@ type PrgPos = (Prg, SourcePos)
 app :: Parser PrgPos
 app = try $ do
   (fn, pos) <- factor
-  argsWithPos <- many1 expr
+  argsWithPos <- many1 factor
   return $ (PrgApp (fn,pos) argsWithPos, pos) 
 
 identifier :: Parser PrgPos
