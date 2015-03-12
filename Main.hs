@@ -10,8 +10,7 @@ import Debug.Trace
 -- TODO Associativity issue
 testProg :: String
 testProg = unlines 
-  [ "aaa = (I (J (K 5) (K 6)))"
-  , "main = (I (J (K 5) (K 6)))"
+  [ "main = (I (J (K 5) (K 6)))"
   , "I n = n"
   ]
 

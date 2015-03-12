@@ -15,15 +15,6 @@ build-type:          Simple
 -- extra-source-files:  
 cabal-version:       >=1.10
 
-Test-Suite test-parser
-  type:               exitcode-stdio-1.0
-  main-is:            Main.hs
-  hs-source-dirs:     test
-  build-depends:      base >=4.7 && <4.8, 
-                      parsec, 
-                      transformers, 
-                      mtl,
-                      quickcheck
 
 executable CoreLang2
   main-is:       Main.hs
@@ -32,3 +23,10 @@ executable CoreLang2
   build-depends:       base >=4.7 && <4.8, parsec, transformers, mtl
   -- hs-source-dirs:      
   default-language:    Haskell2010
+
+Test-Suite test-parser
+  default-language:   Haskell2010
+  type:               exitcode-stdio-1.0
+  main-is:            Main.hs
+  hs-source-dirs:     test,.
+  build-depends:      base, hspec, HUnit, parsec, test-framework, test-framework-hunit
