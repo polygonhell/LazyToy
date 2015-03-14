@@ -29,9 +29,12 @@ reWriteArg :: PrgPos -> LabelState ([Bind], PrgPos)
 reWriteArg (PrgApp fn args, pos) = do
   label <- newLabel
   (bindings, prgs) <- reWriteArgs args ([],[])
-  -- let (bindings, prgs) = ([], args)
   -- trace ("\nrewrittenArgs " ++ (show bindings) ++ "\n" ++ (show prgs) ++ "\n") 
-  return (bindings ++ [(label, (PrgApp fn prgs, pos))], (PrgId label, pos))
+  let bindingPrg = case bindings of 
+                      [] -> (PrgApp fn args, pos)
+                      _ -> (PrgLet bindings (PrgApp fn prgs, pos), pos)
+  return ([(label, bindingPrg)], (PrgId label, pos)) 
+  -- return ([(label, (PrgLet bindings (PrgApp fn prgs, pos), pos))], (PrgId label, pos))
 reWriteArg e = do
   return ([], e)
 
@@ -57,13 +60,13 @@ reWriteExpr e = do
 -- reWriteExpr ((PrgApp fn args, pos) : t) (pb, pp) = do
 
 
-rewrite :: PrgPos -> LabelState PrgPos
-rewrite (PrgTLDef fn args expr, pos) =  do
+factorArgs :: PrgPos -> LabelState PrgPos
+factorArgs (PrgTLDef fn args expr, pos) =  do
   (b, p) <- reWriteExpr expr
   trace ("\n\nTest " ++ (show b) ++ "\n\n" ++ (show p) ++ "\n\n") 
     return (PrgInt 7, pos)
 
-rewrite e = error ("Error " ++ (show e))
+factorArgs e = error ("Error " ++ (show e))
 
   
 

@@ -21,7 +21,7 @@ main = putStrLn $ show out where
     tree <- parse toks
     trace ("Parse = " ++ (show (fst (head tree))))
       return ()
-    Right $ evalState (rewrite (head tree)) LabelGen {count = 0}
+    Right $ evalState (factorArgs (head tree)) LabelGen {count = 0}
 
     -- Right(tree)
 
