@@ -21,6 +21,7 @@ import qualified LLVM.General.AST.Constant as C
 import LLVM.General.PassManager
 import LLVM.General.Transforms
 import LLVM.General.Analysis
+import LLVM.General.Target
 
 import Data.Word
 
@@ -133,7 +134,10 @@ makeDefn def = GlobalDefinition $ functionDefaults {
 makeModule :: String -> [Definition] -> AST.Module
 makeModule name defs = AST.defaultModule { moduleName = name, moduleDefinitions = defs}
 
-
+getNativeAssembly :: LLVM.General.Module.Module -> IO String
+getNativeAssembly mod = 
+  liftError $ withDefaultTargetMachine $ \tm -> do
+    liftError $ moduleTargetAssembly tm mod
 
 
 genCode :: Either ParseError [PrgPos] -> IO()
@@ -142,6 +146,9 @@ genCode (Right (h:t)) = do
   applyToAST code $ \m -> do 
     str <- moduleLLVMAssembly m
     putStrLn $ "\nOp\n" ++ str ++ "\n\n"
+    native <- getNativeAssembly m
+    putStrLn $ "\nNative\n" ++ native ++ "\n\n"
+
   where
     defn = makeDefn $ execState test2 $ defaultDefn {fnName = "main"}
     mod = makeModule "main" [defn]
