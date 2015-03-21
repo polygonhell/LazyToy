@@ -79,8 +79,6 @@ terminator t = do
   modify $ \s -> s {term = Just t}
   return t
 
-
-
 int :: Integer -> Operand
 int a = ConstantOperand $ C.Int 32 a
 
@@ -94,8 +92,6 @@ add a b = do
 ret :: Operand -> DefnState (Named Terminator)
 ret val = terminator $ Do $ Ret (Just val) []
 
-
-
 test2 :: DefnState ()
 test2 = do
   b1 <- add (local (Name "a")) (int 5)
@@ -103,23 +99,6 @@ test2 = do
   ret b2
   endBlock
   return ()
-
-
-test = AST.defaultModule {moduleName = "Hello", moduleDefinitions = [defn]} where
-  defn =   
-    GlobalDefinition $ functionDefaults {
-      name        = Name "poop"
-    , parameters  = ([Parameter (IntegerType 32) (Name "a") []], False)
-    , returnType  = IntegerType 32
-    , basicBlocks = [block] 
-    }
-  block = BasicBlock (UnName 1) blocks term 
-  blocks = 
-    [ (Name "aa") := Add False False (LocalReference $ Name "a") (ConstantOperand $ C.Int 32 3) [] 
-    , (Name "bb") := Sub False False (LocalReference $ Name "aa") (ConstantOperand $ C.Int 32 5) [] 
-    ]
-  term = Do $ Ret (Just (LocalReference $ Name "bb")) []
-
 
 -- Note later versions of LLVM return a ExceptT rather than an ErrorT 
 liftError :: ErrorT String IO a -> IO a
@@ -130,11 +109,11 @@ applyToAST mod fn = withContext $ \context ->
     liftError $ withModuleFromAST context mod $ \m -> do
       fn m
 
-passes::PassSetSpec
-passes=defaultCuratedPassSetSpec{optLevel=Just 2}
+passes :: PassSetSpec
+passes = defaultCuratedPassSetSpec { optLevel = Just 0 }
 
-codegen :: AST.Module -> IO AST.Module 
-codegen mod = applyToAST mod $ \m -> do
+optimize :: AST.Module -> IO AST.Module 
+optimize mod = applyToAST mod $ \m -> do
   withPassManager passes $ \pm -> do
     runPassManager pm m
     moduleAST m
@@ -159,9 +138,7 @@ makeModule name defs = AST.defaultModule { moduleName = name, moduleDefinitions 
 
 genCode :: Either ParseError [PrgPos] -> IO()
 genCode (Right (h:t)) = do
-  putStrLn $ "\ntest2\n" ++ (show mod) ++ "\n\n"
-  code <- codegen mod
-  putStrLn $ "\ntest2\n" ++ (show code) ++ "\n\n"
+  code <- optimize mod
   applyToAST code $ \m -> do 
     str <- moduleLLVMAssembly m
     putStrLn $ "\nOp\n" ++ str ++ "\n\n"
