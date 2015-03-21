@@ -30,11 +30,14 @@ import Control.Monad.State
 
 data Defn = Defn
   { nextLabel :: Word
-  , fnName :: Name
+  , fnName :: String
   , instructions :: [Named Instruction]
   , term :: Maybe (Named Terminator)
   , blocks :: [BasicBlock]
   } deriving (Eq, Show)
+
+defaultDefn :: Defn
+defaultDefn = Defn 0 "" [] Nothing []
 
 type DefnState = State Defn 
 
@@ -128,7 +131,7 @@ applyToAST mod fn = withContext $ \context ->
       fn m
 
 passes::PassSetSpec
-passes=defaultCuratedPassSetSpec{optLevel=Just 0}
+passes=defaultCuratedPassSetSpec{optLevel=Just 2}
 
 codegen :: AST.Module -> IO AST.Module 
 codegen mod = applyToAST mod $ \m -> do
@@ -141,7 +144,7 @@ codegen mod = applyToAST mod $ \m -> do
 
 makeDefn :: Defn -> Definition
 makeDefn def = GlobalDefinition $ functionDefaults {
-    name        = fnName def
+    name        = Name $ fnName def
   , parameters  = ([Parameter (IntegerType 32) (Name "a") []], False)
   , returnType  = IntegerType 32
   , basicBlocks = blocks def
@@ -154,27 +157,20 @@ makeModule name defs = AST.defaultModule { moduleName = name, moduleDefinitions 
 
 
 
-genCode2 :: Either ParseError [PrgPos] -> IO()
-genCode2 (Right (h:t)) = do
-  putStrLn $ "\ntest2\n" ++ (show mod) ++ "\n\n"
-  applyToAST mod $ \m -> do 
-    str <- moduleLLVMAssembly m
-    putStrLn $ "\nOp\n" ++ str ++ "\n\n"
-  where
-    defn = makeDefn $ execState test2 $ Defn 100 (Name "") [] Nothing []
-    mod = makeModule "testMod" [defn]
-
-
-
-
 genCode :: Either ParseError [PrgPos] -> IO()
 genCode (Right (h:t)) = do
-  genCode2 (Right (h:t))
-  code <- codegen test
+  putStrLn $ "\ntest2\n" ++ (show mod) ++ "\n\n"
+  code <- codegen mod
+  putStrLn $ "\ntest2\n" ++ (show code) ++ "\n\n"
   applyToAST code $ \m -> do 
     str <- moduleLLVMAssembly m
     putStrLn $ "\nOp\n" ++ str ++ "\n\n"
-  return ()
+  where
+    defn = makeDefn $ execState test2 $ defaultDefn {fnName = "main"}
+    mod = makeModule "main" [defn]
+
+
+
 
 genCode _ = error "Error"
 
