@@ -17,6 +17,7 @@ import LLVM.General.AST
 import LLVM.General.AST.Global
 import qualified LLVM.General.AST as AST
 import qualified LLVM.General.AST.Constant as C
+import qualified LLVM.General.AST.CallingConvention as CC
 
 import LLVM.General.PassManager
 import LLVM.General.Transforms
@@ -32,13 +33,14 @@ import Control.Monad.State
 data Defn = Defn
   { nextLabel :: Word
   , fnName :: String
+  , fnArgs :: [(Type, Name)]
   , instructions :: [Named Instruction]
   , term :: Maybe (Named Terminator)
   , blocks :: [BasicBlock]
   } deriving (Eq, Show)
 
 defaultDefn :: Defn
-defaultDefn = Defn 0 "" [] Nothing []
+defaultDefn = Defn 0 "" [] [] Nothing []
 
 type DefnState = State Defn 
 
@@ -86,12 +88,19 @@ int a = ConstantOperand $ C.Int 32 a
 local :: Name -> Operand
 local a = LocalReference $ a
 
+global :: Name -> Operand
+global a = ConstantOperand (C.GlobalReference a)
+
 add :: Operand -> Operand -> DefnState Operand
 add a b = do
   instruction $ Add False False a b []
 
 ret :: Operand -> DefnState (Named Terminator)
 ret val = terminator $ Do $ Ret (Just val) []
+
+call :: CallableOperand -> [Operand] -> DefnState Operand
+call fn args = do
+  instruction $ Call False CC.C [] fn [(a, []) | a <- args] [] []
 
 test2 :: DefnState ()
 test2 = do
@@ -100,6 +109,16 @@ test2 = do
   ret b2
   endBlock
   return ()
+
+test3 :: DefnState ()
+test3 = do 
+  a1 <- call fnName [(int 70)]
+  ret a1
+  endBlock
+  return ()
+  where
+    fnName = (Right(global (Name "foo")))
+
 
 -- Note later versions of LLVM return a ExceptT rather than an ErrorT 
 liftError :: ErrorT String IO a -> IO a
@@ -111,7 +130,7 @@ applyToAST mod fn = withContext $ \context ->
       fn m
 
 passes :: PassSetSpec
-passes = defaultCuratedPassSetSpec { optLevel = Just 0 }
+passes = defaultCuratedPassSetSpec { optLevel = Just 3 }
 
 optimize :: AST.Module -> IO AST.Module 
 optimize mod = applyToAST mod $ \m -> do
@@ -120,38 +139,43 @@ optimize mod = applyToAST mod $ \m -> do
     moduleAST m
 
 
-
-
 makeDefn :: Defn -> Definition
 makeDefn def = GlobalDefinition $ functionDefaults {
     name        = Name $ fnName def
-  , parameters  = ([Parameter (IntegerType 32) (Name "a") []], False)
+  , parameters  = (params, False)
   , returnType  = IntegerType 32
   , basicBlocks = blocks def
-  } 
+  } where 
+    params = [Parameter a b [] | (a,b) <- fnArgs def]
 
 
 makeModule :: String -> [Definition] -> AST.Module
 makeModule name defs = AST.defaultModule { moduleName = name, moduleDefinitions = defs}
 
-getNativeAssembly :: LLVM.General.Module.Module -> IO String
-getNativeAssembly mod = 
+nativeAssembly :: LLVM.General.Module.Module -> IO String
+nativeAssembly mod = 
   liftError $ withDefaultTargetMachine $ \tm -> do
     liftError $ moduleTargetAssembly tm mod
 
 
 genCode :: Either ParseError [PrgPos] -> IO()
 genCode (Right (h:t)) = do
+  applyToAST mod $ \m -> do 
+    str <- moduleLLVMAssembly m
+    putStrLn $ "\nOp\n" ++ str ++ "\n\n"
+    native <- nativeAssembly m
+    putStrLn $ "\nNative\n" ++ native ++ "\n\n"
   code <- optimize mod
   applyToAST code $ \m -> do 
     str <- moduleLLVMAssembly m
     putStrLn $ "\nOp\n" ++ str ++ "\n\n"
-    native <- getNativeAssembly m
+    native <- nativeAssembly m
     putStrLn $ "\nNative\n" ++ native ++ "\n\n"
 
   where
-    defn = makeDefn $ execState test2 $ defaultDefn {fnName = "main"}
-    mod = makeModule "main" [defn]
+    defn = makeDefn $ execState test2 $ defaultDefn {fnName = "foo", fnArgs = [(IntegerType 32, Name "a")]}
+    defn2 = makeDefn $ execState test3 $ defaultDefn {fnName = "main"}
+    mod = makeModule "main" (defn : [defn2])
 
 
 
