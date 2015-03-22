@@ -29,4 +29,4 @@ Test-Suite test-parser
   type:               exitcode-stdio-1.0
   main-is:            Main.hs
   hs-source-dirs:     test,.
-  build-depends:      base, hspec, HUnit, parsec, test-framework, test-framework-hunit, mtl, llvm-general >=3.4.2 && <3.4.3, llvm-general-pure
+  build-depends:      base, hspec, HUnit, parsec, test-framework, test-framework-hunit, mtl, llvm-general, llvm-general-pure

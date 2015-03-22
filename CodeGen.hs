@@ -98,6 +98,10 @@ add a b = do
 ret :: Operand -> DefnState (Named Terminator)
 ret val = terminator $ Do $ Ret (Just val) []
 
+-- Note preconfigured optimizer pass fails with CC.Fast, generates a bad tail call
+-- I think this is an issue with this version of LLVM General and it's inability to pass 
+-- the type of the Glabal reference that is the Callee
+-- Docs state that "requires the prototype of all callees to exactly match the prototype of the function definition"
 call :: CallableOperand -> [Operand] -> DefnState Operand
 call fn args = do
   instruction $ Call False CC.C [] fn [(a, []) | a <- args] [] []
