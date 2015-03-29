@@ -13,12 +13,13 @@ import           Text.Parsec.Error
 testProg :: String
 testProg = unlines
   [ "I x = x"
-  , "main = (I (I (I 5)))"
-  , "K x y = x"
-  , "S x y z = (x z (y z))"
-  , "Iprime x = (S K K x)"
-  , "add a = (plus a)"
-  , "test = (add 3 4)"
+  , "main = (I 245)"
+  -- , "m = (I (I (I 5)))"
+  -- , "K x y = x"
+  -- , "S x y z = (x z (y z))"
+  -- , "Iprime x = (S K K x)"
+  -- , "add a = (plus a)"
+  -- , "test = (add 3 4)"
   ]
 
 
