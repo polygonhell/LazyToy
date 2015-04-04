@@ -8,6 +8,7 @@ import Parser
 import Text.Parsec.Error
 import CoreFunctions
 import DefnState
+import Thunk
 
 import LLVM.General.Module 
 import LLVM.General.Context
@@ -47,14 +48,6 @@ optimize ast = applyToAST ast $ \m -> do
     moduleAST m
 
 
-makeDefn :: Defn -> Definition
-makeDefn def = GlobalDefinition $ functionDefaults {
-    name        = Name $ fnName def
-  , parameters  = (params, False)
-  , returnType  = PointerType (IntegerType 64) $ AddrSpace 0
-  , basicBlocks = blocks def
-  } where 
-    params = [Parameter a b [] | (a,b) <- fnArgs def]
 
 
 makeModule :: String -> [Definition] -> AST.Module
@@ -80,7 +73,7 @@ processPrg ((PrgId name), pos) = do
 
 -- TL Functiondef called
 processPrg ((PrgApp ((PrgId name),_) args), pos) = do
-  r <- call (Right (global (Name name))) [ConstantOperand (C.Null (PointerType (IntegerType 64) $ AddrSpace 0))]
+  r <- call (globalFn name) [ConstantOperand (C.Null (PointerType (IntegerType 64) $ AddrSpace 0))]
   return r
 
 processPrg ((PrgApp fn args), pos) = do
@@ -94,7 +87,7 @@ processPrg ((PrgLet binds expr), pos) = do
 processDefn :: PrgPos -> Definition
 processDefn ((PrgTLDef name args expr), pos) = 
   let defn = defaultDefn {fnName = name, fnArgs = a}
-      a = [(PointerType (IntegerType 64) $ AddrSpace 0, Name n) | n <- args]
+      a = [(i64ptr, Name n) | n <- args]
       e = processPrg ((PrgTLDef name args expr), pos)
     in
     makeDefn $ execState e defn 

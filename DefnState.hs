@@ -2,6 +2,8 @@ module DefnState  where
 
 
 import LLVM.General.AST
+import LLVM.General.AST.Global
+import LLVM.General.AST.AddrSpace
 import qualified LLVM.General.AST.Constant as C
 import qualified LLVM.General.AST.CallingConvention as CC
 
@@ -65,6 +67,9 @@ terminator t = do
 int :: Integer -> Operand
 int a = ConstantOperand $ C.Int 32 a
 
+int64 :: Integer -> Operand
+int64 a = ConstantOperand $ C.Int 64 a
+
 local :: Name -> Operand
 local a = LocalReference $ a
 
@@ -74,6 +79,10 @@ global a = ConstantOperand (C.GlobalReference a)
 add :: Operand -> Operand -> DefnState Operand
 add a b = do
   instruction $ Add False False a b []
+
+store :: Operand -> Operand -> DefnState Operand
+store addr val = do
+  instruction $ Store False addr val Nothing 0 []
 
 ret :: Operand -> DefnState (Named Terminator)
 ret val = terminator $ Do $ Ret (Just val) []
@@ -85,3 +94,22 @@ ret val = terminator $ Do $ Ret (Just val) []
 call :: CallableOperand -> [Operand] -> DefnState Operand
 call fn args = do
   instruction $ Call False CC.C [] fn [(a, []) | a <- args] [] []
+
+globalFn :: String -> CallableOperand
+globalFn name = (Right (global (Name name)))
+
+
+br :: Name -> DefnState (Named Terminator)
+br dst = 
+  terminator $ Do $ Br dst []
+
+
+makeDefn :: Defn -> Definition
+makeDefn def = GlobalDefinition $ functionDefaults {
+    name        = Name $ fnName def
+  , parameters  = (params, False)
+  , returnType  = PointerType (IntegerType 64) $ AddrSpace 0
+  , basicBlocks = blocks def
+  } where 
+    params = [Parameter a b [] | (a,b) <- fnArgs def]
+
